@@ -1,73 +1,83 @@
 <!DOCTYPE html>
 <html>
 
-<head>
-    <meta charset="UTF-8" />
-    <title>Health Bot Geo Lookup</title>
-</head>
+    <head>
+        <meta charset="UTF-8" />
+        <title>Health Bot Geo Lookup</title>
+    </head>
 
 <body>
     <h1>Health bot</h1>
-    <p>Hello <span id="user_ip"></span> from <span id="user_countrycode"></span> <span id="user_region"></span></p>
+    <p>Hello <span id="user_ip"></span> from <span id="user_countrycode"></span>, <span id="user_region"></span></p>
     <p>The health bot is <span id="user_healthbotenabled"></span> for your country and state.</p>
     <div id="disabled_message"></div>
 
     <script type="application/javascript">
+    /* 
+    This function is automatically invoked via the geojs script
+    imported at the bottom of this file.  The json parameter is 
+    populated with users location information
     
-        /* this function is automatically invoked via the geojs script and json object is populated with location information */
-        function geoip(json) {
-            determineBotEnabled(json);
+    Documentation of JSON object at
+    https://www.geojs.io/docs/v1/endpoints/geo/
+     */
+    
+    function geoip(json) {
+        
+        /* MODIFY THIS LIST TO ENABLE HEALTHBOT IN SPECIFIED STATES/REGIONS */
+        var enabledStates = [
+        'California', 
+        'New York', 
+        'Washington'
+        ];
+        
+        // Run the location check
+        var enabled = isUserInState(json, enabledStates);
+        
+        // Update page based on result
+        var healthBotEnabled = document.getElementById("user_healthbotenabled");        
+        if (enabled) {
+            healthBotEnabled.textContent = "ENABLED";
+        } else {
+            healthBotEnabled.textContent = "DISABLED";
+            var disabledMessage = document.getElementById("disabled_message");
+            disabledMessage.innerHTML = "<p>Bot is disabled in your state</p>";
+        }       
+        
+        // Populate debug information
+        var userip = document.getElementById("user_ip");
+        var countrycode = document.getElementById("user_countrycode");
+        var region = document.getElementById("user_region");        
+        userip.textContent = json.ip;
+        countrycode.textContent = json.country_code;
+        region.textContent = json.region;    
+    }
+
+    /* This function uses IP location information to determine if the health bot should be enabled */        
+    function isUserInState(json, states) {        
+        // Track whether or not the bot should be enabled
+        var enableBot = false;
+
+        var enabledCountry = "US";        
+
+        try {
+            // Lowercase all states
+            var lowerCaseEnabledStates = states.map(function (value) {
+                return value.toLowerCase()
+            });
+
+            // Is user in permitted state/country?
+            var stateEnabled = lowerCaseEnabledStates.indexOf(json.region.toLowerCase());
+            var countryEnabled = enabledCountry.toLowerCase() === json.country_code.toLowerCase();
+
+            // Should we show the bot?
+            enableBot = stateEnabled !== -1 && countryEnabled;
+        } catch (error) {
+            console.log(error);
         }
 
-        /* this function uses ip location information to determine if the health bot should be enabled */        
-        function determineBotEnabled(json) {
-
-            // update page elements with information collected from geojs ip location lookup
-            var userip = document.getElementById("user_ip");
-            var countrycode = document.getElementById("user_countrycode");
-            var region = document.getElementById("user_region");
-            var healthBotEnabled = document.getElementById("user_healthbotenabled");
-            userip.textContent = json.ip;
-            countrycode.textContent = json.country_code;
-            region.textContent = json.region;
-
-            // message to display if the client country and state is disabled
-            /* MODIFY THIS TO CHANGE BOT DISABLED DISPLAY TEXT */
-            var disabledMessageText = "The health bot is not currently available in your area. THIS MESSAGE ONLY SHOWS IF DISABLED BY COUNTRY AND STATE!!!";
-
-            // define the list of enabled regions to use the healthbot currently
-            /* MODIFY THIS LIST TO ENABLE HEALTHBOT IN SPECIFIED STATES */
-            var enabledCountry = "US";
-            var enabledStates = ['California', 'Washington', 'New York'];
-
-            // bool to track whether or not the bot is enabled
-            var enableBot = false;
-
-            try {
-                // lowercase all enbledStates
-                var lowerCaseEnabledStates = enabledStates.map(function (value) {
-                    return value.toLowerCase()
-                });
-
-                // determine if the current client is in one of the enabled states and country
-                var statedEnabled = lowerCaseEnabledStates.indexOf(json.region.toLowerCase());
-                var countryEnabled = enabledCountry.toLowerCase() === json.country_code.toLowerCase();
-
-                // determine if we should show the bot
-                enableBot = statedEnabled === 1 && countryEnabled;
-            } catch (error) {
-                console.log(error);
-            }
-
-            // use the value of enableBot to determine whether or not to display the healthbot
-            if (enableBot) {
-                healthBotEnabled.textContent = "ENABLED";
-            } else {
-                healthBotEnabled.textContent = "DISABLED";
-                var disabledMessage = document.getElementById("disabled_message");
-                disabledMessage.innerHTML = "<p>" + disabledMessageText + "</p>";
-            }
-        }
+        return enableBot;
+    }
     </script>
     <script async src="https://get.geojs.io/v1/ip/geo.js"></script>
 </body>
