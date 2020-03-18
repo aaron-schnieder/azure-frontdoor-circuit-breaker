@@ -10,6 +10,7 @@
     <h1>Health bot</h1>
     <p>Hello <span id="user_ip"></span> from <span id="user_countrycode"></span> <span id="user_region"></span></p>
     <p>The health bot is <span id="user_healthbotenabled"></span> for your country and state.</p>
+    <div id="disabled_message"></div>
 
     <script type="application/javascript">
     
@@ -29,6 +30,9 @@
             userip.textContent = json.ip;
             countrycode.textContent = json.country_code;
             region.textContent = json.region;
+
+            // message to display if the client country and state is disabled
+            var disabledMessageText = "The health bot is not currently available in your area. THIS MESSAGE ONLY SHOWS IF DISABLED BY COUNTRY AND STATE!!!";
 
             // bool to track whether or not the bot is enabled
             var enableBot = false;
@@ -56,10 +60,11 @@
 
             // use the value of enableBot to determine whether or not to display the healthbot
             if (enableBot) {
-                enableBot = true;
                 healthBotEnabled.textContent = "ENABLED";
             } else {
                 healthBotEnabled.textContent = "DISABLED";
+                var disabledMessage = document.getElementById("disabled_message");
+                disabledMessage.innerHTML = "<p>" + disabledMessageText + "</p>";
             }
         }
     </script>
