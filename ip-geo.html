@@ -10,8 +10,15 @@
     <h1>Health bot</h1>
     <p>Hello <span id="user_ip"></span> from <span id="user_countrycode"></span> <span id="user_region"></span></p>
     <p>The health bot is <span id="user_healthbotenabled"></span> for your country and state.</p>
-    
+
     <script type="application/javascript">
+    
+        /* this function is automatically invoked via the geojs script and json object is populated with location information */
+        function geoip(json) {
+            determineBotEnabled(json);
+        }
+
+        /* this function uses ip location information to determine if the health bot should be enabled */        
         function determineBotEnabled(json) {
 
             // update page elements with information collected from geojs ip location lookup
@@ -25,15 +32,17 @@
 
             // bool to track whether or not the bot is enabled
             var enableBot = false;
-            
+
             // define the list of enabled regions to use the healthbot currently
             /* MODIFY THIS LIST TO ENABLE HEALTHBOT IN SPECIFIED STATES */
             var enabledCountry = "US";
-            var enabledStates = ['California','Washington','New York'];
+            var enabledStates = ['California', 'Washington', 'New York'];
 
             try {
                 // lowercase all enbledStates
-                var lowerCaseEnabledStates = enabledStates.map(function(value){return value.toLowerCase()});
+                var lowerCaseEnabledStates = enabledStates.map(function (value) {
+                    return value.toLowerCase()
+                });
 
                 // determine if the current client is in one of the enabled states and country
                 var statedEnabled = lowerCaseEnabledStates.indexOf(json.region.toLowerCase());
@@ -41,17 +50,16 @@
 
                 // determine if we should show the bot
                 enableBot = statedEnabled === 1 && countryEnabled;
-
-                // use the value of enableBot to determine whether or not to display the healthbot
-                if(enableBot) {
-                    enableBot 
-                    healthBotEnabled.textContent = "ENABLED";
-                } else {
-                    healthBotEnabled.textContent = "DISABLED";
-                }
-            }
-            catch(error) {
+            } catch (error) {
                 console.log(error);
+            }
+
+            // use the value of enableBot to determine whether or not to display the healthbot
+            if (enableBot) {
+                enableBot = true;
+                healthBotEnabled.textContent = "ENABLED";
+            } else {
+                healthBotEnabled.textContent = "DISABLED";
             }
         }
     </script>
