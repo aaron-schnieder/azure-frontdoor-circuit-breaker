@@ -10,7 +10,7 @@ exec 2>&1
 
 ## -------
 # Shell script variables
-AZURE_SUBSCRIPTION_ID=''
+AZURE_SUBSCRIPTION_ID='2a6b40d9-16cb-4676-8609-d5a1df110803'
 AZURE_REGION='westus2'
 AZURE_RESOURCE_GROUP='aaros-cdc-rg'
 AZURE_SERVICE_UNAVAILABLE_STORAGE_ACCOUNT='aaroscdcstorage2'
@@ -35,7 +35,7 @@ then
 fi
 
 ## -------
-# Create an Azure Storage account to use as a CDN to host the service-unavailable.html page
+# Create an Azure Storage account to use as a CDN to host the bot-busy.html page
 SA_EXISTS=$(az storage account list --query "[?contains(name, '$AZURE_SERVICE_UNAVAILABLE_STORAGE_ACCOUNT')].name" -o tsv)
 if [ -z "$SA_EXISTS" ]
 then
@@ -51,8 +51,8 @@ then
     az storage blob service-properties update \
         --account-name $AZURE_SERVICE_UNAVAILABLE_STORAGE_ACCOUNT \
         --static-website \
-        --404-document service-unavailable.html \
-        --index-document service-unavailable.html
+        --404-document bot-busy.html \
+        --index-document bot-busy.html
 fi
 
 ## -------
@@ -60,16 +60,18 @@ fi
 SA_CONNECTION_STRING=$(az storage account show-connection-string --resource-group $AZURE_RESOURCE_GROUP --name $AZURE_SERVICE_UNAVAILABLE_STORAGE_ACCOUNT -o tsv)
 
 ## -------
-# Upload the service-unavailable.html page to the blog storage account if it doesn't exist
-HTML_EXISTS=$(az storage blob exists --connection-string $SA_CONNECTION_STRING --account-name $AZURE_SERVICE_UNAVAILABLE_STORAGE_ACCOUNT --container-name '$web' --name service-unavailable.html -o tsv)
+# Upload the bot-busy.html page to the blog storage account if it doesn't exist
+HTML_EXISTS=$(az storage blob exists --connection-string $SA_CONNECTION_STRING --account-name $AZURE_SERVICE_UNAVAILABLE_STORAGE_ACCOUNT --container-name '$web' --name bot-busy.html -o tsv)
 if [ $HTML_EXISTS == "False" ]
 then
-    az storage blob upload -f ./service-unavailable.html -c '$web' -n service-unavailable.html --account-name $AZURE_SERVICE_UNAVAILABLE_STORAGE_ACCOUNT --connection-string $SA_CONNECTION_STRING --content-type 'text/html; charset=utf-8'
+    az storage blob upload -f ./bot-busy.html -c '$web' -n bot-busy.html --account-name $AZURE_SERVICE_UNAVAILABLE_STORAGE_ACCOUNT --connection-string $SA_CONNECTION_STRING --content-type 'text/html; charset=utf-8'
 fi
 
 ## -------
 # Get the URL for the static failover page
 FAILOVER_URI=$(az storage account show -n $AZURE_SERVICE_UNAVAILABLE_STORAGE_ACCOUNT -g $AZURE_RESOURCE_GROUP --query "primaryEndpoints.web" --output tsv)
+# Extract the FQDN from the URI
+FAILOVER_FQDN=$($FAILOVER_URI | awk -F/ '{print $3}')
 
 ## -------
 # Get the name of the primary backend pool (should be a single primary pool)
@@ -78,7 +80,7 @@ BACKEND_POOL=$(az network front-door backend-pool list --front-door-name $AZURE_
 ## -------
 # Add a low priority Azure Frontoor backend pool pointed at the service-univailable.html Azure Storage endpoint as a failover
 az network front-door backend-pool backend add \
-    --address $FAILOVER_URI \
+    --address "aaroscdcstorage2.z5.web.core.windows.net" \
     --front-door-name $AZURE_FRONTDOOR_NAME \
     --pool-name $BACKEND_POOL \
     --resource-group $AZURE_RESOURCE_GROUP \
